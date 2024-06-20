@@ -205,14 +205,46 @@ resource "aws_iam_role_policy" "prometheus_iam_role_policy" {
 # Create EC2 Instance
 
 resource "aws_instance" "prometheus_instance" {
-  ami                         = data.aws_ami.amazon_linux.id
-  associate_public_ip_address = true
-  instance_type               = "t2.micro"
-  vpc_security_group_ids      = [aws_security_group.prometheus.id]
-  subnet_id                   = data.aws_instance.get_existing_tfe_subnet_id.subnet_id
-  iam_instance_profile        = aws_iam_instance_profile.prometheus_iam_instance_profile.name
-  user_data                   = templatefile("prometheus-install.sh.tftpl", { tfe_tag_name = var.tfe_tag_name, aws_region = var.aws_region })
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.prometheus.id]
+  subnet_id              = data.aws_instance.get_existing_tfe_subnet_id.subnet_id
+  iam_instance_profile   = aws_iam_instance_profile.prometheus_iam_instance_profile.name
+  user_data              = templatefile("prometheus-install.sh.tftpl", { tfe_tag_name = var.tfe_tag_name, aws_region = var.aws_region })
   tags = {
     "Name" = "prometheus_instance"
+  }
+}
+
+data "aws_elb" "tfe" {
+  name = "tfe-${var.tfe_tag_name}-lb"
+}
+
+resource "aws_elb" "metrics" {
+  subnets         = data.aws_elb.tfe.subnets
+  name            = "metrics-${var.tfe_tag_name}-lb"
+  security_groups = [aws_security_group.prometheus.id]
+  instances       = [aws_instance.prometheus_instance.id]
+
+  health_check {
+    healthy_threshold   = 2
+    interval            = 30
+    target              = "TCP:3000"
+    timeout             = 10
+    unhealthy_threshold = 10
+  }
+
+  listener {
+    instance_port     = 3000
+    instance_protocol = "HTTP"
+    lb_port           = 3000
+    lb_protocol       = "HTTP"
+  }
+
+  listener {
+    instance_port     = 9090
+    instance_protocol = "HTTP"
+    lb_port           = 9090
+    lb_protocol       = "HTTP"
   }
 }
