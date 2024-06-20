@@ -195,12 +195,13 @@ resource "aws_iam_role_policy" "prometheus_iam_role_policy" {
 # Create EC2 Instance
 
 resource "aws_instance" "prometheus_instance" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t2.micro"
-  vpc_security_group_ids = [aws_security_group.prometheus.id]
-  subnet_id              = data.aws_instance.get_existing_tfe_subnet_id.subnet_id
-  iam_instance_profile   = aws_iam_instance_profile.prometheus_iam_instance_profile.name
-  user_data              = templatefile("prometheus-install.sh.tftpl", { tfe_tag_name = var.tfe_tag_name, aws_region = var.aws_region })
+  ami                         = data.aws_ami.amazon_linux.id
+  associate_public_ip_address = true
+  instance_type               = "t2.micro"
+  vpc_security_group_ids      = [aws_security_group.prometheus.id]
+  subnet_id                   = data.aws_instance.get_existing_tfe_subnet_id.subnet_id
+  iam_instance_profile        = aws_iam_instance_profile.prometheus_iam_instance_profile.name
+  user_data                   = templatefile("prometheus-install.sh.tftpl", { tfe_tag_name = var.tfe_tag_name, aws_region = var.aws_region })
   tags = {
     "Name" = "prometheus_instance"
   }
