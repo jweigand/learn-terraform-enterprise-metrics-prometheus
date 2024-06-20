@@ -12,9 +12,12 @@ provider "aws" {
 
 #Create Security Group resource
 
+
+
 resource "aws_security_group" "prometheus" {
   name        = "prometheus"
   description = "Learn tutorial Security Group for prometheus instance"
+  vpc_id      = data.aws_subnet.tfe_instance.vpc_id
 
   ingress {
     description = "Allow port 9090 inbound"
@@ -115,6 +118,11 @@ data "aws_instance" "get_existing_tfe_subnet_id" {
     values = [var.tfe_tag_name]
   }
 }
+
+data "aws_subnet" "tfe_instance" {
+  id = data.aws_instance.get_existing_tfe_subnet_id.subnet_id
+}
+
 
 #Create aws_iam_role resource
 
