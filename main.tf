@@ -146,6 +146,16 @@ resource "aws_iam_role" "prometheus_aws_iam_role" {
  EOF
 }
 
+data "aws_iam_policy" "ssm" {
+  name = "AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.prometheus_aws_iam_role.name
+  policy_arn = data.aws_iam_policy.ssm.arn
+}
+
+
 #Create aws_iam_instance_profile resource
 
 resource "aws_iam_instance_profile" "prometheus_iam_instance_profile" {
